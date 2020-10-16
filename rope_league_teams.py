@@ -2,6 +2,7 @@ import numpy
 import pandas
 
 # list of 5.X ratings possible
+# starting at 5.10, 10 means 10- and 10.5 means 10+, etc.
 climbratings = [4, 5, 6, 7, 8, 9, 10, 10.5, 11, 11.5, 12, 12.5, 13]
 # dictionary of ratings of the first set of climbs (1A-1D)
 # also set the upside span of each climb
@@ -10,8 +11,8 @@ climbratings = [4, 5, 6, 7, 8, 9, 10, 10.5, 11, 11.5, 12, 12.5, 13]
 #      an estimate of the maximum rating a climber can climb on their first
 #      attempt, and is estimated as the rating of 1B minus one grade, but
 #      must be equal to or greater than the rating of 1A.
-firstratings = {'1A': 6, '1B': 9, '1C': 10, '1D': 11.5,
-                '1Au': 9, '1Bu': 9, '1Cu': 11, '1Du': 13}
+firstratings = {'1A': 6, '1B': 10, '1C': 10, '1D': 11.5,
+                '1Au': 9, '1Bu': 10, '1Cu': 11, '1Du': 13}
 # create random climb ratings for sets 3 through 8,
 # insert the real preliminary ratings from set 2
 sevensets = {2: [5, 8, 9, 10.5], 3: [], 4: [], 5: [], 6: [], 7: [], 8: []}
@@ -33,7 +34,7 @@ try:
 except FileNotFoundError:
     # if there is no climber data create random climber data for testing
     data = {'Climber': [], 'first': [], 'second': [], 'third': [], '1A': [], '1B': [], '1C': [], '1D': [], 'score 1': [], 'score all': []}
-    for i in range(1000):
+    for i in range(50):
         data['Climber'].append(i)
         # randomly generate the highest ratings a climber can climb on first, second, and third+ attempts
         ifirst = max(0, int(round(numpy.random.normal(5, 2), 0)))
@@ -88,7 +89,6 @@ for climber, climberstats in climberdata.iterrows():
     bestfirstclimb = None
     bestsecondclimb = None
     bestthirdclimb = None
-    lowestnotclimbed = None
     # go through the climbs from the first set and estimate upside and downside ratings for climber
     for climb in ['1A', '1B', '1C', '1D']:
         # get score the climber got on this climb
@@ -123,10 +123,6 @@ for climber, climberstats in climberdata.iterrows():
                 bestthirdclimb = climb
                 climberdata.loc[climber, 'down third'] = downrating
                 climberdata.loc[climber, 'up third'] = uprating
-        # climber did not finish this climb
-        else:
-            if lowestnotclimbed is None:
-                lowestnotclimbed = climb
     # fill in any missing upside and downside ratings
     # climber has no score of 10 or 15
     if bestfirstclimb is None and bestsecondclimb is None:
@@ -169,4 +165,59 @@ for climber, climberstats in climberdata.iterrows():
                 elif climberdata.loc[climber, span+' third'] >= climb:
                     climberdata.loc[climber, 'estimated score all '+span] += 5
 
+# now assign the climbers to teams
+# set the number of teams
+numberofteams = 10
+# add a column for team membership
+climberdata['team'] = numpy.nan
+
+# add climbers to teams. the idea is to balance the teams so that every
+# team has about the same total downside, median and upside estimated
+# total scores. this way each team has about the same odds of winning.
+# first sort the climber data by score so the highest scores are first
+climberdata.sort_values('estimated score all median', inplace=True, ascending=False)
+# parse through climber list again, this time adding them to teams
+seedteam = 0
+for climber, climberstats in climberdata.iterrows():
+    # first add one top ranked climbers to each team, so that
+    # every team is seeded with one climber to begin with
+    if seedteam < 10:
+        climberdata.loc[climber, 'team'] = seedteam + 1
+        seedteam += 1
+        continue
+    # all teams now have one climber each. try adding this climber to each team
+    # track the effect on total scores for adding this climber to each team
+    bestteam = (numpy.nan, numpy.nan)
+    for tryteam in reversed(range(1, numberofteams+1)):
+        # temporarily add player to this team
+        climberdata.loc[climber, 'team'] = tryteam
+        # get the sum of downside, median and upside total scores for all teams
+        downsidescores = []
+        medianscores = []
+        upsidescores = []
+        for sumteam in range(1, numberofteams+1):
+            teamlist = climberdata.loc[climberdata['team'] == sumteam, :]
+            downsidescores.append(numpy.sum(teamlist['estimated score all down']))
+            medianscores.append(numpy.sum(teamlist['estimated score all median']))
+            upsidescores.append(numpy.sum(teamlist['estimated score all up']))
+        # calculate the standard deviation, a measure of how different the scores are from each other,
+        # the team with the lowest sum of the three standard deviations is selected to make the teams
+        # more similar, or at least more different by a smaller amount
+        totalstdev = numpy.std(downsidescores) + numpy.std(medianscores) + numpy.std(upsidescores)
+        # check if this totalstdev is the lowest so far
+        if numpy.isnan(bestteam[0]) or totalstdev < bestteam[1]:
+            bestteam = (tryteam, totalstdev)
+    # now add the climber to the best team
+    climberdata.loc[climber, 'team'] = bestteam[0]
+
+# output team stats
+print('team\tdown\tmedian\tup')
+for team in range(1, numberofteams + 1):
+    teamlist = climberdata.loc[climberdata['team'] == team, :]
+    print('\t'.join([str(team),
+                     str(numpy.sum(teamlist['estimated score all down'])),
+                     str(numpy.sum(teamlist['estimated score all median'])),
+                     str(numpy.sum(teamlist['estimated score all up']))]))
+
+# save the processed data to file
 climberdata.to_csv('./processedclimberdata.txt', sep='\t')
