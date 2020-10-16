@@ -7,7 +7,8 @@ Climber data is read in from a tab delimited .txt file, the following headers ar
 - 1A, 1B, 1C, 1D : scores for the climbs in the first set  
 - score1 : total score for first set
 
-If climberdata.txt is not present then randomized climber data is generated for testing.
+If climberdata.txt is not present then randomized climber data is generated for testing. The final results are output
+to the file processedclimberdata.txt.
 
 The script first estimates the minimum, median, and maximum total score each climber might get in the season.
 This is done by estimating the 5.X climb rating each climber can climb on their first, second and third+ attempts,
