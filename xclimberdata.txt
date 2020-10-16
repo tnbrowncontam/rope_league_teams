@@ -1,4 +1,4 @@
-Climber	first	second	third	score 1	score all	1A	1B	1C	1D
+climber	first	second	third	score 1	score all	1A	1B	1C	1D
 1	9.5	10	11	35	335	15	10	10	0
 2	6.5	7.5	9	15	150	15	0	0	0
 3	11.5	12	12	60	470	15	15	15	15
