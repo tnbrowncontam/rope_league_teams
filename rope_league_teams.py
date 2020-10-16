@@ -1,3 +1,9 @@
+"""
+rope_league_teams.py
+A script for assigning climbers in the East Peak Rope league to teams based on their score for the first set.
+written by Trevor Brown in consultation with East Peak
+"""
+
 import numpy
 import pandas
 
@@ -29,11 +35,13 @@ for key in range(3, 9):
     sevensets[key].sort()
 
 try:
+    testrun = False
     # load climber data
     climberdata = pandas.read_csv('./climberdata.txt', sep='\t', index_col='climber')
 except FileNotFoundError:
+    testrun = True
     # if there is no climber data create random climber data for testing
-    data = {'climber': [], 'first attempt': [], 'second attempt': [], 'third attempt': [], '1A': [], '1B': [], '1C': [], '1D': [], 'score 1': [], 'total score': []}
+    data = {'climber': [], '1A': [], '1B': [], '1C': [], '1D': [], 'score1': [], 'first attempt': [], 'second attempt': [], 'third attempt': [], 'total score': []}
     for i in range(50):
         data['climber'].append(i)
         # randomly generate the highest ratings a climber can climb on first, second, and third+ attempts
@@ -54,9 +62,9 @@ except FileNotFoundError:
             else:
                 data[climb].append(0)
         # sum up points from first set
-        data['score 1'].append(data['1A'][-1] + data['1B'][-1] + data['1C'][-1] + data['1D'][-1])
+        data['score1'].append(data['1A'][-1] + data['1B'][-1] + data['1C'][-1] + data['1D'][-1])
         # now add the scores for the 7 simulated sets
-        data['total score'].append(data['score 1'][-1])
+        data['total score'].append(data['score1'][-1])
         for setnumber in sevensets.keys():
             for climb in sevensets[setnumber]:
                 if data['first attempt'][-1] >= climb:
@@ -67,7 +75,7 @@ except FileNotFoundError:
                     data['total score'][-1] += 5
 
     climberdata = pandas.DataFrame.from_dict(data)
-climberdata.set_index('climber', inplace=True)
+    climberdata.set_index('climber', inplace=True)
 
 # add empty columns that will be used later
 climberdata['downside first attempt'] = numpy.nan
@@ -79,9 +87,9 @@ climberdata['median second attempt'] = numpy.nan
 climberdata['downside third attempt'] = numpy.nan
 climberdata['upside third attempt'] = numpy.nan
 climberdata['median third attempt'] = numpy.nan
-climberdata['estimated total score min'] = climberdata['score 1']
-climberdata['estimated total score median'] = climberdata['score 1']
-climberdata['estimated total score max'] = climberdata['score 1']
+climberdata['estimated total score min'] = climberdata['score1']
+climberdata['estimated total score median'] = climberdata['score1']
+climberdata['estimated total score max'] = climberdata['score1']
 
 # look at climbers one at a time (parse through the rows of climber data)
 for climber, climberstats in climberdata.iterrows():
@@ -211,14 +219,21 @@ for climber, climberstats in climberdata.iterrows():
     climberdata.loc[climber, 'team'] = bestteam[0]
 
 # output team stats
-print('team\tdown\tmedian\tup\t"actual"')
+print('team\tdown\tmedian\tup', end='')
+if testrun:
+    print('\t"actual"')
+else:
+    print()
 for team in range(1, numberofteams + 1):
     teamlist = climberdata.loc[climberdata['team'] == team, :]
     print('\t'.join([str(team),
                      str(numpy.sum(teamlist['estimated total score min'])),
                      str(numpy.sum(teamlist['estimated total score median'])),
-                     str(numpy.sum(teamlist['estimated total score max'])),
-                     str(numpy.sum(teamlist['total score']))]))
+                     str(numpy.sum(teamlist['estimated total score max']))]), end='')
+    if testrun:
+        print('\t' + str(numpy.sum(teamlist['total score'])))
+    else:
+        print()
 
 # save the processed data to file
 climberdata.to_csv('./processedclimberdata.txt', sep='\t')
