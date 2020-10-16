@@ -219,10 +219,13 @@ for climber, climberstats in climberdata.iterrows():
     climberdata.loc[climber, 'team'] = bestteam[0]
 
 # output team stats
+print('team results')
 print('team\tdown\tmedian\tup', end='')
 if testrun:
     print('\t"actual"')
 else:
+    # remove extraneous internal columns
+    climberdata = climberdata[['1A', '1B', '1C', '1D', 'score1', 'team', 'estimated total score min', 'estimated total score median', 'estimated total score max']]
     print()
 for team in range(1, numberofteams + 1):
     teamlist = climberdata.loc[climberdata['team'] == team, :]
@@ -234,6 +237,17 @@ for team in range(1, numberofteams + 1):
         print('\t' + str(numpy.sum(teamlist['total score'])))
     else:
         print()
+
+# output hypothetical season
+print(' climb ratings')
+print('set#\tA\tB\tC\tD')
+print('\t'.join(['1', str(firstratings['1A']), str(firstratings['1B']), str(firstratings['1C']), str(firstratings['1D'])]))
+for setnumber in range(2, 9):
+    print('\t'.join([str(setnumber),
+                     str(sevensets[setnumber][0]),
+                     str(sevensets[setnumber][1]),
+                     str(sevensets[setnumber][2]),
+                     str(sevensets[setnumber][3])]))
 
 # save the processed data to file
 climberdata.to_csv('./processedclimberdata.txt', sep='\t')
