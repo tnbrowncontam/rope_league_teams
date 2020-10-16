@@ -1,5 +1,5 @@
 rope_league_teams.py  
-A script for assigning climbers in the East Peak Rope league to teams based on their score for the first set.
+A script for assigning climbers in the East Peak Rope league to teams based on their score for the first set.  
 written by Trevor Brown in consultation with East Peak
 
 Climber data is read in from a tab delimited .txt file, the following headers are required (case sensitive):
