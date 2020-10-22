@@ -6,6 +6,7 @@ written by Trevor Brown in consultation with East Peak
 
 import numpy
 import pandas
+from io import StringIO
 
 # list of 5.X ratings possible
 # starting at 5.10, 10 means 10- and 10.5 means 10+, etc.
@@ -24,7 +25,7 @@ firstratings = {'1A': 6, '1B': 10, '1C': 10, '1D': 11.5,
 sevensets = {2: [5, 8, 9, 10.5],
              3: [6, 9, 11.5, 12.5],
              4: [], 5: [], 6: [], 7: [], 8: []}
-for key in range(3, 9):
+for key in range(4, 9):
     # generate random ratings for climbs in this set
     # A: rating average is 5.7, mostly in the range 5.6 to 5.8
     sevensets[key].append(climbratings[min(max(0, int(round(numpy.random.normal(3, 1), 0))), len(climbratings) - 1)])
@@ -36,11 +37,65 @@ for key in range(3, 9):
     sevensets[key].append(climbratings[min(max(0, int(round(numpy.random.normal(9, 1), 0))), len(climbratings) - 1)])
     sevensets[key].sort()
 
-try:
+# inputdata = None
+inputdata = '''climber	1A	1B	1C	1D	score1
+23	0	15	15	10	40
+4	15	15	15	10	55
+11	15	15	15	5	50
+33	15	15	15	5	50
+22	15	15	15	5	50
+21	15	15	15	5	50
+15	15	15	15	5	50
+13	15	15	15	5	50
+45	15	15	15	5	50
+27	15	15	15	0	45
+44	15	15	15	0	45
+42	15	15	15	0	45
+41	15	15	15	0	45
+3	15	15	15	0	45
+24	15	10	10	0	35
+43	15	10	10	0	35
+38	15	10	10	0	35
+36	15	10	10	0	35
+34	15	10	10	0	35
+32	15	10	10	0	35
+31	15	10	10	0	35
+30	15	10	10	0	35
+28	15	10	10	0	35
+9	15	10	10	0	35
+17	15	10	10	0	35
+8	15	10	10	0	35
+12	15	10	10	0	35
+19	15	10	10	0	35
+35	15	5	5	0	25
+39	15	5	5	0	25
+48	15	5	5	0	25
+37	15	5	5	0	25
+16	15	5	5	0	25
+1	15	5	5	0	25
+47	15	5	5	0	25
+2	15	5	5	0	25
+20	15	5	5	0	25
+5	15	5	5	0	25
+10	15	5	5	0	25
+40	15	5	5	0	25
+7	15	0	0	0	15
+46	15	0	0	0	15
+14	15	0	0	0	15
+29	15	0	0	0	15
+26	15	0	0	0	15
+25	15	0	0	0	15
+0	10	0	0	0	10
+6	10	0	0	0	10
+18	5	0	0	0	5
+49	0	0	0	0	0
+'''
+
+if inputdata is not None:
     testrun = False
-    # load climber data
-    climberdata = pandas.read_csv('./climberdata.txt', sep='\t', index_col='climber')
-except FileNotFoundError:
+    # load climber data from string
+    climberdata = pandas.read_csv(StringIO(inputdata), sep='\t', index_col='climber')
+else:
     testrun = True
     # if there is no climber data create random climber data for testing
     data = {'climber': [], '1A': [], '1B': [], '1C': [], '1D': [], 'score1': [], 'first attempt': [], 'second attempt': [], 'third attempt': [], 'total score': []}
@@ -80,6 +135,7 @@ except FileNotFoundError:
     climberdata.set_index('climber', inplace=True)
 
 # add empty columns that will be used later
+climberdata['random seed'] = numpy.random.rand(climberdata.shape[0])
 climberdata['downside first attempt'] = numpy.nan
 climberdata['upside first attempt'] = numpy.nan
 climberdata['median first attempt'] = numpy.nan
@@ -134,8 +190,11 @@ for climber, climberstats in climberdata.iterrows():
                 climberdata.loc[climber, 'downside third attempt'] = downrating
                 climberdata.loc[climber, 'upside third attempt'] = uprating
     # fill in any missing upside and downside ratings
+    # climber has all scores zero,climber must be manually assigned
+    if bestfirstclimb is None and bestsecondclimb is None and bestthirdclimb is None:
+        continue
     # climber has no score of 10 or 15
-    if bestfirstclimb is None and bestsecondclimb is None:
+    elif bestfirstclimb is None and bestsecondclimb is None:
         # downside is minimum climb rating
         climberdata.loc[climber, 'downside first attempt'] = 4
         # upside is one less than easiest climb
@@ -185,7 +244,7 @@ climberdata['team'] = numpy.nan
 # team has about the same total downside, median and upside estimated
 # total scores. this way each team has about the same odds of winning.
 # first sort the climber data by score so the highest scores are first
-climberdata.sort_values('estimated total score median', inplace=True, ascending=False)
+climberdata.sort_values(['estimated total score median', 'random seed'], inplace=True, ascending=False)
 # parse through climber list again, this time adding them to teams
 seedteam = 0
 for climber, climberstats in climberdata.iterrows():
@@ -218,9 +277,12 @@ for climber, climberstats in climberdata.iterrows():
         if numpy.isnan(bestteam[0]) or totalstdev < bestteam[1]:
             bestteam = (tryteam, totalstdev)
     # now add the climber to the best team
-    climberdata.loc[climber, 'team'] = bestteam[0]
+    if climberdata.loc[climber, 'score1'] > 0:
+        climberdata.loc[climber, 'team'] = bestteam[0]
+    else:
+        climberdata.loc[climber, 'team'] = 'manual'
 
-# output team stats
+        # output team stats
 print('team results')
 print('team\tdown\tmedian\tup', end='')
 if testrun:
