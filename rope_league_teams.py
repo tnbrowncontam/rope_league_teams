@@ -21,7 +21,9 @@ firstratings = {'1A': 6, '1B': 10, '1C': 10, '1D': 11.5,
                 '1Au': 9, '1Bu': 11, '1Cu': 11, '1Du': 13}
 # create random climb ratings for sets 3 through 8,
 # insert the real preliminary ratings from set 2
-sevensets = {2: [5, 8, 9, 10.5], 3: [], 4: [], 5: [], 6: [], 7: [], 8: []}
+sevensets = {2: [5, 8, 9, 10.5],
+             3: [6, 9, 11.5, 12.5],
+             4: [], 5: [], 6: [], 7: [], 8: []}
 for key in range(3, 9):
     # generate random ratings for climbs in this set
     # A: rating average is 5.7, mostly in the range 5.6 to 5.8
@@ -175,7 +177,7 @@ for climber, climberstats in climberdata.iterrows():
 
 # now assign the climbers to teams
 # set the number of teams
-numberofteams = 10
+numberofteams = 5
 # add a column for team membership
 climberdata['team'] = numpy.nan
 
@@ -189,7 +191,7 @@ seedteam = 0
 for climber, climberstats in climberdata.iterrows():
     # first add one top ranked climber to each team, so that
     # every team is seeded with one climber to begin with
-    if seedteam < 10:
+    if seedteam < numberofteams:
         climberdata.loc[climber, 'team'] = seedteam + 1
         seedteam += 1
         continue
